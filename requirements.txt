@@ -1,3 +1,4 @@
 python-docx
 paddlehub
 paddlepaddle
+numpy
