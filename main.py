@@ -1,12 +1,20 @@
 import os
+import time
 import paddlehub as hub
-from helpers import get_paragraphs
+from helpers import helper
 from docx import Document
 
-text = get_paragraphs.get_paragraphs_text('docx/zh-demo.docx')
+'''
+Translte single docx file
+'''
+
+text = helper.get_paragraphs_text('docx/zh-demo.docx')
 
 model = hub.Module(name='transformer_zh-en', beam_size=5)
 new_document = Document()
+# starting time
+start = time.time()
+
 for item in text:
     src_style = item[0]
     src_texts = [item[1]]
@@ -21,4 +29,17 @@ for item in text:
         new_document.add_heading(trg_texts, level=int(src_style[-1]))
     else:
         new_document.add_paragraph(trg_texts)
+
+# end time
+end = time.time()
+
+print('Time: ', end - start)  
+
 new_document.save('docx/translate_demo.docx')
+
+# Clean untranslated result
+document = Document('docx/translate_demo.docx')
+# Display the content of each paragraph
+helper.replace_text(document, 'No', '')
+# Save cleaned documents
+document.save('docx/translate_clean_demo.docx')

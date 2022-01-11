@@ -2,3 +2,4 @@ python-docx
 paddlehub
 paddlepaddle
 numpy
+timeit

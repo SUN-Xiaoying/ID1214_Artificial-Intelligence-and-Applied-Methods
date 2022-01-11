@@ -23,6 +23,9 @@ for l in lines:
 # create a smaller dataset to make the demo process faster
 filtered_pairs = []
 
+# Three filters: 
+# 1. Both English and Chinese sentence is less tham MAX-LEN
+# 2. English sentence starts with Subjectives
 for x in pairs:
     if len(x[0]) < MAX_LEN and len(x[1]) < MAX_LEN and \
     x[0][0] in ('i', 'you', 'he', 'she', 'we', 'they'):
@@ -120,3 +123,41 @@ for epoch in range(epochs):
         loss.backward()
         opt.step()
         opt.clear_grad()
+
+
+encoder.eval()
+atten_decoder.eval()
+
+num_of_exampels_to_evaluate = 10
+indices = np.random.choice(len(train_en_sents),  num_of_exampels_to_evaluate, replace=False)
+x_data = train_en_sents[indices]
+sent = paddle.to_tensor(x_data)
+en_repr = encoder(sent)
+
+word = np.array(
+    [[cn_vocab['<bos>']]] * num_of_exampels_to_evaluate
+)
+word = paddle.to_tensor(word)
+
+hidden = paddle.zeros([num_of_exampels_to_evaluate, 1, hidden_size])
+cell = paddle.zeros([num_of_exampels_to_evaluate, 1, hidden_size])
+
+decoded_sent = []
+for i in range(MAX_LEN + 2):
+    logits, (hidden, cell) = atten_decoder(word, hidden, cell, en_repr)
+    word = paddle.argmax(logits, axis=1)
+    decoded_sent.append(word.numpy())
+    word = paddle.unsqueeze(word, axis=-1)
+    
+results = np.stack(decoded_sent, axis=1)
+for i in range(num_of_exampels_to_evaluate):
+    en_input = " ".join(filtered_pairs[indices[i]][0])
+    ground_truth_translate = "".join(filtered_pairs[indices[i]][1])
+    model_translate = ""
+    for k in results[i]:
+        w = list(cn_vocab)[k]
+        if w != '<pad>' and w != '<eos>':
+            model_translate += w
+    print(en_input)
+    print("true: {}".format(ground_truth_translate))
+    print("pred: {}".format(model_translate))
